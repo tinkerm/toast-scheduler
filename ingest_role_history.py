@@ -23,7 +23,7 @@ def get_member_id(fname, lname):
 translator = {                            \
   "Toastmaster"         : "toastmaster",  \
   "Speaker"             : "speaker",      \
-  "Evaluator"           : "evaluator",    \
+  "Evaluator"           : "eval",         \
   "Timer"               : "timer",        \
   "Grammarian"          : "grammarian",   \
   "Vote Counter"        : "votecounter",  \
@@ -54,10 +54,20 @@ with open(sys.argv[1], 'rb') as csvfile:
       tallies[member].update([role] * int(line[i + 1]))
 
   for member in members:
-    print member
-    print tallies[member].most_common()
-    print
-    print get_member_id(*member.split(' '))
+    this_member = get_member_id(*member.split(' '))
+    roles, counts = zip(*tallies[member].most_common())
+    cursor = cnx.cursor()
+    update_role_history = ("INSERT INTO role_history"
+                           "(who, {}) "
+                           "VALUES ({}, {})")
+    update_role_history = update_role_history.format( \
+      ', '.join(roles),                               \
+      this_member,                                    \
+      ', '.join(['%s'] * len(counts))                 \
+    )
+    print "Recording history for {}...".format(member)
+    cnx.commit()
+    cursor.close() 
 
 cnx.close()
   
