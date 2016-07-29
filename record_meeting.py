@@ -13,7 +13,7 @@ query = 'SELECT dayof FROM known_meetings ORDER BY dayof'
 cursor = cnx.cursor()
 cursor.execute(query) 
 rows = cursor.fetchall()
-dars = [ date(*[int(piece) for piece in row[0].split('-')]) for row in rows ]
+dars = [ row[0] for row in rows ]
 for this_day in dars:
   if this_day == earliest_possible:
     earliest_possible = earliest_possible + timedelta(days=7) 
@@ -49,6 +49,26 @@ for role in SQL_MEETING_ROLES:
   if choice is not None:
     to_insert[role] = ids[choice]
 
-print to_insert
+active_roles = to_insert.keys()
+update = 'INSERT INTO known_meetings '                                                                            \
+  + '(dayof, {}) '.format(', '.join(active_roles))                                                           \
+  + 'VALUES ("{}", {})'.format(str(chosen_one), ', '.join(['%({})s'.format(role) for role in active_roles]))
+cursor = cnx.cursor()
+cursor.execute(update, to_insert)
+cnx.commit()
+cursor.close()
+
+print "Validation: "
+print "------------"
+for role in SQL_MEETING_ROLES:
+  query = 'SELECT fname, lname, title, dayof, id, {0} FROM known_meetings INNER JOIN members ON id = {0} WHERE dayof = "{1}"'.format(role, chosen_one)
+  cursor = cnx.cursor()
+  cursor.execute(query)
+  rows = cursor.fetchall()
+  if rows:
+    print "{}: {} {}, {}".format(role, rows[0][0], rows[0][1], rows[0][2])
+  else:
+    print "{}: ---".format(role)
+  cursor.close()
 
 cnx.close()
