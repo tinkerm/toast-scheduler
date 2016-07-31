@@ -29,27 +29,6 @@ CREATE TABLE known_meetings ( dayof       DATE PRIMARY KEY,
                               eval3       INTEGER REFERENCES members,
                               timer       INTEGER REFERENCES members );
 
-DROP TABLE IF EXISTS role_history;  
-CREATE TABLE role_history ( who         INTEGER PRIMARY KEY REFERENCES members,
-                            toastmaster INTEGER NOT NULL DEFAULT 0,
-                            topicmaster INTEGER NOT NULL DEFAULT 0,
-                            geneval     INTEGER NOT NULL DEFAULT 0,
-                            speaker     INTEGER NOT NULL DEFAULT 0,
-                            eval        INTEGER NOT NULL DEFAULT 0,
-                            timer       INTEGER NOT NULL DEFAULT 0,
-                            grammarian  INTEGER NOT NULL DEFAULT 0,
-                            ahcounter   INTEGER NOT NULL DEFAULT 0,
-                            momenttm    INTEGER NOT NULL DEFAULT 0,
-                            jokemaster  INTEGER NOT NULL DEFAULT 0,
-                            listener    INTEGER NOT NULL DEFAULT 0,
-                            votecounter INTEGER NOT NULL DEFAULT 0 );
-
-
-DROP TABLE IF EXISTS to_be_absent;
-CREATE TABLE to_be_absent ( event INTEGER AUTO_INCREMENT PRIMARY KEY,
-                            who   INTEGER NOT NULL REFERENCES members,
-                            dayof DATE NOT NULL);
-
 DROP TABLE IF EXISTS future_meetings; 
 CREATE TABLE future_meetings ( dayof       DATE PRIMARY KEY,
                                toastmaster INTEGER REFERENCES members,
@@ -68,3 +47,29 @@ CREATE TABLE future_meetings ( dayof       DATE PRIMARY KEY,
                                eval2       INTEGER REFERENCES members,
                                eval3       INTEGER REFERENCES members,
                                timer       INTEGER REFERENCES members );
+
+DROP TABLE IF EXISTS to_be_absent;
+CREATE TABLE absent ( event INTEGER AUTO_INCREMENT PRIMARY KEY,
+                      who   INTEGER NOT NULL REFERENCES members,
+                      dayof DATE NOT NULL REFERENCES future_meetings );
+
+DROP TABLE IF EXISTS to_be_blacklisted;
+CREATE TABLE blacklisted ( event INTEGER AUTO_INCREMENT PRIMARY KEY,
+                           who   INTEGER NOT NULL REFERENCES members,
+                           dayof DATE NOT NULL REFERENCES future_meetings );
+
+DROP TABLE IF EXISTS role_history;  
+CREATE TABLE role_history ( who         INTEGER PRIMARY KEY REFERENCES members,
+                            toastmaster INTEGER NOT NULL DEFAULT 0,
+                            topicmaster INTEGER NOT NULL DEFAULT 0,
+                            geneval     INTEGER NOT NULL DEFAULT 0,
+                            speaker     INTEGER NOT NULL DEFAULT 0,
+                            eval        INTEGER NOT NULL DEFAULT 0,
+                            timer       INTEGER NOT NULL DEFAULT 0,
+                            grammarian  INTEGER NOT NULL DEFAULT 0,
+                            ahcounter   INTEGER NOT NULL DEFAULT 0,
+                            momenttm    INTEGER NOT NULL DEFAULT 0,
+                            jokemaster  INTEGER NOT NULL DEFAULT 0,
+                            listener    INTEGER NOT NULL DEFAULT 0,
+                            votecounter INTEGER NOT NULL DEFAULT 0 );
+

@@ -63,9 +63,12 @@ with open(sys.argv[1], 'rb') as csvfile:
     update_role_history = update_role_history.format( \
       ', '.join(roles),                               \
       this_member,                                    \
-      ', '.join(['%s'] * len(counts))                 \
-    )
+      ', '.join(['%({})s'.format(role) for role in roles]))
     print "Recording history for {}...".format(member)
+    to_insert = { }
+    for i, role in enumerate(roles):
+      to_insert[role] = counts[i]
+    cursor.execute(update_role_history, to_insert)
     cnx.commit()
     cursor.close() 
 

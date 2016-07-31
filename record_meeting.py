@@ -21,7 +21,7 @@ for this_day in dars:
 choices = [ ]
 
 cur_day = earliest_possible
-while cur_day <= date.today():
+while cur_day <= date.today() + timedelta(days=7):
   if cur_day not in dars:
     choices.append(cur_day)  
   cur_day = cur_day + timedelta(days=7)  

@@ -1,3 +1,8 @@
+import mysql.connector
+import menus
+from datetime import date, timedelta
+from roles import SQL_MEETING_ROLES
+
 def print_stuff(line, i=0):
   as_text = []
   for thing in line:
@@ -25,3 +30,20 @@ def get_choice(choices):
     except:
       pass
   return c
+
+def choose_member():
+  cnx = mysql.connector.connect(                  \
+      user='tm', password='dhmtks52',             \
+      host='localhost', database='toastmasters')
+  query = 'SELECT id, fname, lname, title FROM members'
+  cursor = cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  names = [' '.join(row[1:]) for row in rows ]
+  ids = [int(row[0]) for row in rows ]
+  cursor.close()
+  cnx.close()
+
+  choice = menus.get_choice(names)
+
+  return None if choice is None else ids[choice]
