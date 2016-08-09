@@ -11,13 +11,13 @@ precs = {                            \
   "eval1" : 4,      \
   "eval2" : 6,      \
   "eval3" : 8,      \
-  "timer" : 9,     \
-  "grammarian" : 10, \
-  "votecounter" : 11,\
-  "ahcounter" : 12,  \
+  "timer" : 10,     \
+  "grammarian" : 11, \
+  "votecounter" : 12,\
+  "ahcounter" : 13,  \
   "momenttm" :  None,   \
-  "jokemaster" : 13, \
-  "listener" : None,    \
+  "jokemaster" : 14, \
+  "listener" : 9,    \
   "topicmaster" : 1, \
   "geneval" : 2     \
 }
@@ -36,10 +36,22 @@ names = {                            \
   "ahcounter" : 'Ah Counter',   \
   "momenttm" :  None,   \
   "jokemaster" : 'Jokemaster',  \
-  "listener" : None,    \
+  "listener" : 'Listener',    \
   "topicmaster" : 'Topicmaster',  \
   "geneval" : 'Gen.\\ Eval.' \
 }
+
+def is_holiday(dayof):
+  local_cnx = mysql.connector.connect(                  \
+            user='tm', password='dhmtks52',             \
+            host='localhost', database='toastmasters')
+  query = 'SELECT * FROM holidays WHERE dayof = "{}"'.format(dayof)
+  cursor = local_cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  local_cnx.close()
+  return True if rows else False
 
 def num_of(who, role, asof):
   local_cnx = mysql.connector.connect(                  \
@@ -89,6 +101,23 @@ def latex_forecast(startday, numdays=8):
             user='tm', password='dhmtks52',             \
             host='localhost', database='toastmasters')
 
+  lastday = startday + timedelta(days=(numdays - 1) * 8)
+  holiday_offsets = [] 
+  query = 'SELECT (dayof) FROM holidays ' \
+            + 'WHERE dayof >= "{}" AND dayof <= "{}"'.format(str(startday), str(lastday)) 
+  cursor = local_cnx.cursor()
+  cursor.execute(query)
+  rows = cursor.fetchall()
+  cursor.close()
+  for row in rows:
+    query = 'SELECT COUNT(*) FROM future_meetings ' \
+              + 'WHERE dayof >= "{}" AND dayof < "{}"'.format(str(startday), str(row[0])) 
+    cursor = local_cnx.cursor()
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    cursor.close()
+    holiday_offsets.append(int(rows[0][0]))
+
   fout = open("schedules/forecast_from_{}.tex".format(str(startday)), "w")
 
   fout.write(r'\documentclass[12pt]{article}' + '\n\n')
@@ -105,21 +134,17 @@ def latex_forecast(startday, numdays=8):
   fout.write(r'    \begin{center}' + '\n')
   fout.write(r'      {\Large \textbf{Agenda Forecast for Plano Frontier Toastmasters}}'    \
                + '\\footnote{{As of {}.}} \\\\'.format(date.today()) + '\n')
-#  fout.write('       \\adjustbox{{margin=0pt 0pt 0pt 6pt}}{{\\normalsize {} to {}, 2016}}\n'.format( \
-#   startday.strftime('%b %d'), \
-#   (startday + timedelta(days=7*(numdays - 1))).strftime('%b %d')))
   fout.write(r'    \end{center}' + '\n')
   fout.write(r'    \vspace{12pt}' + '\n')
-  fout.write('    \\extrarowsep=8.2px \\begin{{tabu}} to \\linewidth{{{}}}\\hline\n'.format( \
+  fout.write('    \\extrarowsep=7.2px \\begin{{tabu}} to \\linewidth{{{}}}\\hline\n'.format( \
               '|X[1.15]|' + 'X[c]|' * numdays)) 
   fout.write('      \\taburowcolors[2]2{Azure..white}\n') 
   fout.write(r'      & ' + ' & '.join( \
                 ['\\textbf{' + (startday + timedelta(days=i*7)).strftime('%b %d') + '}' \
                     for i in range(numdays)]) + '\\\\\\hline\n')
-  skipped_roles = [ 'momenttm', 'listener' ] 
+  skipped_roles = [ 'momenttm' ] 
   the_roles = sorted([role for role in SQL_MEETING_ROLES if role not in skipped_roles ], key=lambda role: precs[role]) 
   
-  lastday = startday + timedelta(days=(numdays - 1) * 8)
   for role in the_roles:
     fout.write('      \\textbf{{{}}} & '.format(names[role])) 
     query = 'SELECT fname, lname, title FROM members ' \
@@ -128,6 +153,8 @@ def latex_forecast(startday, numdays=8):
     cursor = local_cnx.cursor()
     cursor.execute(query)
     rows = cursor.fetchall()
+    for which_holiday, offset in enumerate(holiday_offsets):
+      rows.insert(which_holiday + offset, [ ' ', ' ' ])
     fout.write('      ' + ' & '.join([ \
       ( r'{\small ' + row[0] + ' ' + row[1][0] + r'}') for row in rows ]) + '\\\\')       
     if role == 'geneval' or role == 'eval3' or role == the_roles[-1]:

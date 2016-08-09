@@ -47,7 +47,7 @@ def schedule_meeting(dayof):
   used_up = set()
   schedule = {} 
 
-  skipped_roles = [ 'listener', 'momenttm' ]
+  skipped_roles = [ 'momenttm' ]
   speakers = [ 'speaker1', 'speaker2', 'speaker3' ]   
   evals = [ 'eval1', 'eval2', 'eval3' ]   
 

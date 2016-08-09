@@ -73,3 +73,5 @@ CREATE TABLE role_history ( who         INTEGER PRIMARY KEY REFERENCES members,
                             listener    INTEGER NOT NULL DEFAULT 0,
                             votecounter INTEGER NOT NULL DEFAULT 0 );
 
+DROP TABLE IF EXISTS holidays;
+CREATE TABLE holidays ( dayof DATE PRIMARY KEY );

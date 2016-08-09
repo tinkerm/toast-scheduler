@@ -1,5 +1,5 @@
 import mysql.connector
-import menus
+import menus, toastutil
 from datetime import date, timedelta
 from roles import SQL_MEETING_ROLES
 
@@ -22,7 +22,7 @@ choices = [ ]
 
 cur_day = earliest_possible
 while cur_day <= date.today() + timedelta(days=7):
-  if cur_day not in dars:
+  if cur_day not in dars and not toastutil.is_holiday(cur_day):
     choices.append(cur_day)  
   cur_day = cur_day + timedelta(days=7)  
 
