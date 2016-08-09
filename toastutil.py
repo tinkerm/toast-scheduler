@@ -41,6 +41,20 @@ names = {                            \
   "geneval" : 'Gen.\\ Eval.' \
 }
 
+def prompt_for_member():
+  local_cnx = mysql.connector.connect(                  \
+            user='tm', password='dhmtks52',             \
+            host='localhost', database='toastmasters')
+  query = 'SELECT id, fname, lname, title FROM members'
+  cursor = local_cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  names = [' '.join(row[1:]) for row in rows ]
+  ids = [int(row[0]) for row in rows ]
+  local_cnx.close()
+  return ids[menus.get_choice(names)]
+
 def is_holiday(dayof):
   local_cnx = mysql.connector.connect(                  \
             user='tm', password='dhmtks52',             \
@@ -53,7 +67,38 @@ def is_holiday(dayof):
   local_cnx.close()
   return True if rows else False
 
-def num_of(who, role, asof):
+def num_of_using(who, role, asof, cnx):
+  query = 'SELECT {} FROM role_history WHERE who = {}'.format(role, who)
+  cursor = cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  cnt = int(rows[0][0]) if rows else 0
+
+  all_roles = [ role + str(i) for i in range(1, 4) ]
+  condition = ' = {} OR '.format(who)
+
+  query = 'SELECT COUNT(*) FROM known_meetings WHERE ' \
+          + condition.join(all_roles) + ' = {}'.format(who) 
+  cursor = cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  cnt += int(rows[0][0]) if rows else 0
+
+  query = 'SELECT COUNT(*) FROM future_meetings WHERE (' \
+          + condition.join(all_roles) + ' = {} '.format(who) \
+          + ') AND dayof < "{}"'.format(asof)
+    
+  cursor = cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  cnt += int(rows[0][0]) if rows else 0
+
+  return cnt
+
+def num_of(who, role, asof, beforeOnly = True):
   local_cnx = mysql.connector.connect(                  \
             user='tm', password='dhmtks52',             \
             host='localhost', database='toastmasters')
@@ -62,7 +107,8 @@ def num_of(who, role, asof):
   cursor.execute(query) 
   rows = cursor.fetchall()
   cursor.close()
-  cnt = int(rows[0][0])
+  cnt = int(rows[0][0]) if rows else 0
+    
 
   all_roles = [ role + str(i) for i in range(1, 4) ]
   condition = ' = {} OR '.format(who)
@@ -73,16 +119,22 @@ def num_of(who, role, asof):
   cursor.execute(query) 
   rows = cursor.fetchall()
   cursor.close()
-  cnt += int(rows[0][0])
+  cnt += int(rows[0][0]) if rows else 0
 
-  query = 'SELECT COUNT(*) FROM future_meetings WHERE ' \
-          + condition.join(all_roles) + ' = {} '.format(who) \
-          + 'AND dayof < "{}"'.format(asof)
+  if beforeOnly:
+    query = 'SELECT COUNT(*) FROM future_meetings WHERE (' \
+            + condition.join(all_roles) + ' = {} '.format(who) \
+            + ') AND dayof < "{}"'.format(asof)
+  else:
+    query = 'SELECT COUNT(*) FROM future_meetings WHERE (' \
+            + condition.join(all_roles) + ' = {} '.format(who) \
+            + ') AND dayof <= "{}"'.format(asof)
+    
   cursor = local_cnx.cursor()
   cursor.execute(query) 
   rows = cursor.fetchall()
   cursor.close()
-  cnt += int(rows[0][0])
+  cnt += int(rows[0][0]) if rows else 0
 
   local_cnx.close()
   

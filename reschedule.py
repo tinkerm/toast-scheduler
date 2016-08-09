@@ -66,6 +66,11 @@ def schedule_meeting(dayof):
       role_names = [ role ]
     for who in eligible:
       priority = 365 - days_since_role(who, dayof, role_names)
+      if toastutil.precs[role] >= 9:  
+        if toastutil.num_of_using(who, 'speaker', dayof, cnx) < 3:
+          priority -= 1
+        if toastutil.num_of_using(who, 'eval', dayof, cnx) < 3:
+          priority -= 1
       heappush(pq, (priority, who))  
     schedule[role] = heappop(pq)[1]
     used_up.add(schedule[role])
