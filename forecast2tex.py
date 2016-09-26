@@ -12,7 +12,7 @@ cursor.execute(query)
 rows = cursor.fetchall()
 cursor.close()
 if rows:
-  days = [ row[0] for row in rows ]
+  days = [ rows[0][0] - timedelta(days=7) ] + [ row[0] for row in rows ]
   choice = menus.get_choice([ str(day) for day in days ])
   n = int(raw_input("How many meetings to include in the forecast? "))
   toastutil.latex_forecast(days[choice], n)

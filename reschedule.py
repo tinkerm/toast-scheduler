@@ -26,6 +26,22 @@ def days_since_role(who, asof, role_names):
   cursor.close()
   return (date.today() - rows[0][0]).days if rows else 365
 
+def is_holiday(dayof):
+  query = 'SELECT * FROM holidays WHERE dayof = "{}"'.format(str(dayof))
+  cursor = cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  return len(rows) > 0
+
+def blacklisted_on_day(dayof):
+  query = 'SELECT who FROM blacklisted WHERE dayof = "{}"'.format(str(dayof))
+  cursor = cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  return { int(row[0]) for row in rows }
+
 def absent_on_day(dayof):
   query = 'SELECT who FROM absent WHERE dayof = "{}"'.format(str(dayof))
   cursor = cnx.cursor()
@@ -41,7 +57,9 @@ def schedule_meeting(dayof):
   cursor.execute(query) 
   rows = cursor.fetchall()
   absent = absent_on_day(dayof)
+  blacklisted = blacklisted_on_day(dayof)
   print "Absent: {!s}".format(absent)
+  print "Blacklisted on {}: {!s}".format(str(dayof), blacklisted)
   ids = filter(lambda who: who not in absent, [int(row[0]) for row in rows])
   cursor.close()
   used_up = set()
@@ -56,7 +74,12 @@ def schedule_meeting(dayof):
       continue 
     pq = []
     eligible = filter(lambda who: (who not in used_up) and \
-                        toastutil.has_prereqs(who, role, dayof), ids)
+                       toastutil.has_prereqs(who, role, dayof), ids)
+    if role in speakers:
+      eligible = filter(lambda who: who not in blacklisted, eligible)
+#   eligible = filter(lambda who: (who not in used_up) and \
+#                       toastutil.has_prereqs(who, role, dayof) and \
+#                       True if role not in speakers else (False if who in blacklisted else True), ids)
     role_names = None
     if role in speakers:
       role_names = speakers
@@ -106,6 +129,8 @@ rows = cursor.fetchall()
 cursor.close()
 if rows and rows[0][0] >= from_day:
   from_day = rows[0][0] + timedelta(days=7)
+while is_holiday(from_day):
+  from_day += timedelta(days=7)
 num = int(raw_input("How many meetings to schedule starting from {}? ".format(str(from_day))))
 
 for i in range(num):
