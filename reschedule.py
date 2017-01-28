@@ -34,6 +34,14 @@ def is_holiday(dayof):
   cursor.close()
   return len(rows) > 0
 
+def get_do_not_schedule():
+  query = 'SELECT id FROM do_not_schedule'
+  cursor = cnx.cursor()
+  cursor.execute(query) 
+  rows = cursor.fetchall()
+  cursor.close()
+  return { int(row[0]) for row in rows }
+
 def blacklisted_on_day(dayof):
   query = 'SELECT who FROM blacklisted WHERE dayof = "{}"'.format(str(dayof))
   cursor = cnx.cursor()
@@ -58,9 +66,13 @@ def schedule_meeting(dayof):
   rows = cursor.fetchall()
   absent = absent_on_day(dayof)
   blacklisted = blacklisted_on_day(dayof)
+  do_not_schedule = get_do_not_schedule()
   print "Absent: {!s}".format(absent)
   print "Blacklisted on {}: {!s}".format(str(dayof), blacklisted)
-  ids = filter(lambda who: who not in absent, [int(row[0]) for row in rows])
+  ids = filter(lambda who: ((who not in absent) \
+                              and (who not in do_not_schedule) \
+                              and (who not in blacklisted)), \
+               [int(row[0]) for row in rows])
   cursor.close()
   used_up = set()
   schedule = {} 
@@ -95,8 +107,9 @@ def schedule_meeting(dayof):
         if toastutil.num_of_using(who, 'eval', dayof, cnx) < 3:
           priority -= 1
       heappush(pq, (priority, who))  
-    schedule[role] = heappop(pq)[1]
-    used_up.add(schedule[role])
+    if pq:
+      schedule[role] = heappop(pq)[1]
+      used_up.add(schedule[role])
 
   active_roles = schedule.keys()
   update = 'INSERT INTO future_meetings '                           \
@@ -114,7 +127,8 @@ cnx = mysql.connector.connect(                  \
     user='tm', password='dhmtks52',             \
     host='localhost', database='toastmasters')
 
-from_day = date.today() + timedelta(days=(7 - date.today().weekday()))
+#from_day = date.today() + timedelta(days=(7 - date.today().weekday()))
+from_day = date.today()
 query = 'SELECT dayof FROM future_meetings ORDER BY dayof DESC'
 cursor = cnx.cursor()
 cursor.execute(query) 

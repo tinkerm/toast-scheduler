@@ -206,7 +206,7 @@ def latex_forecast(startday, numdays=8):
     cursor.execute(query)
     rows = cursor.fetchall()
     for which_holiday, offset in enumerate(holiday_offsets):
-      rows.insert(which_holiday + offset, [ ' ', ' ' ])
+      rows.insert(offset, [ ' ', ' ' ])
     fout.write('      ' + ' & '.join([ \
       ( r'{\small ' + row[0] + ' ' + row[1][0] + r'}') for row in rows ]) + '\\\\')       
     if role == 'geneval' or role == 'eval3' or role == the_roles[-1]:
